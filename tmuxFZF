@@ -2,17 +2,30 @@
 
 # www.github.com/viyoriya
 
+# pre : install lazygit
+
+file="$HOME/.config/tmux/tmux-ssh-server.txt"
+
 RED='\033[0;31m'
 PURPLE='\033[0;35m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RESET='\033[0m'
 
-file="$HOME/.config/tmux/tmux-ssh-server.txt"
-TMUX_OPTS="1: SSH\n2: Sessions"
+TMUX_OPTS="1: SSH\n2: Sessions\n3: lazygit"
 TMUX_SSH_OPTS="1: Add\n2: Connect\n3: Delete"
 TMUX_SESSION_OPTS="1: Create session\n2: Rename session\n3: Switch session\n4: Attach session\n5: Kill session"
+TMUX_LG_OPTS="1: Start in window\n2: Start in pane\n3: Start in pop-up"
 
+# lazygit params
+#isLazygitEnabled=N   # Y will enable lazygit
+
+LG_HEIGHT=60%
+LG_WIDTH=80%
+LG_APP=lazygit
+LG_SPLIT=-h
+
+# ssh params
 SSH_PARAMS="-Y"
 
 function tmuxMain(){
@@ -20,18 +33,50 @@ function tmuxMain(){
     case "$choice" in
         1)
             tmuxSsh "$@"
-        ;;
+            ;;
         2)
             tmuxSession "$@"
-        ;;
+            ;;
+        3)
+            #            if [[ "$isLazygitEnabled" = "Y" ]];then
+            tmuxLazygit "$@"
+            #            else
+            #                echo -e "\n\t\t\t ::::$GREEN Setting isLazygitEnabled flag value to Y in line no 21 will enable lazygit  $RESET ::::\n "
+            #            fi
+            ;;
         *)
             echo -e "\n\t\t\t ::::$GREEN No option selected $RESET ::::\n "
-        ;;
+            ;;
     esac
 }
 
+function tmuxLazygit(){
+
+    if [ -d ".git" ]; then
+        choice=$(echo -e "$TMUX_LG_OPTS" | fzf +m --prompt=":::: Select  > " | awk -F':' '{ print $1 }' )
+        case "$choice" in
+            1)
+                tmux neww -n "$LG_APP" "$LG_APP"
+                ;;
+            2)
+                tmux splitw "$LG_SPLIT" "$LG_APP"
+                ;;
+            3)
+                tmux popup -h "$LG_HEIGHT" -w "$LG_WIDTH" "$LG_APP"
+                ;;
+            *)
+                tmuxLazygit "$@"
+                ;;
+        esac
+    else
+        echo -e "\n\t\t\t ::::$BLUE This is not a git project directory $RESET ::::\n " && tmuxMain "$@"
+    fi
+
+
+}
+
 function tmuxSsh(){
-    
+
     if [ ! -f "$file" ]; then
         mkdir -p "$(dirname "$file")" && touch "$file"
     else
@@ -45,7 +90,7 @@ function tmuxSsh(){
                 echo "ssh $SSH_PARAMS $addSsh" >> "$file"
             fi
             tmuxSsh "$@"
-        ;;
+            ;;
         2)
             cmd=$(fzf --cycle +m --prompt=":::: SSH connection(s) list >" "$@" < "$file")
             if [[ -n "$cmd" ]];then
@@ -54,7 +99,7 @@ function tmuxSsh(){
             else
                 tmuxSsh "$@"
             fi
-        ;;
+            ;;
         3)
             cmd=$(fzf --cycle +m --prompt=":::: SSH connection list >" "$@" < "$file")
             if [[ -n "$cmd" ]];then
@@ -65,12 +110,12 @@ function tmuxSsh(){
                 fi
             fi
             tmuxSsh "$@"
-        ;;
+            ;;
         *)
             tmuxMain "$@"
-        ;;
+            ;;
     esac
-    
+
 }
 
 function tmuxSession()
@@ -82,7 +127,7 @@ function tmuxSession()
         1)
             tmux new-session -s$((index+1)) $mode
             tmux switch-client -t$((index+1))
-        ;;
+            ;;
         2)
             if (( "$index" >= 1 ));then
                 switch=$(tmux list-sessions 2>/dev/null | fzf --cycle +m --prompt=":::: Rename tmux session  > ")
@@ -101,10 +146,10 @@ function tmuxSession()
                 else
                     tmuxSession "$@"
                 fi
-                elif (( "$index" < 1 ));then
+            elif (( "$index" < 1 ));then
                 echo -e "\n\t\t ::::$BLUE Tmux session does not exist to rename session ::::\n" $RESET  &&  tmuxSession "$@"
             fi
-        ;;
+            ;;
         3)
             if (( "$index" > 1 ));then
                 if [[ "$mode" = "-d" ]];then
@@ -118,12 +163,12 @@ function tmuxSession()
                 else
                     echo -e "\n\t\t ::::$BLUE You can not switch session outside tmux. Please do attach session $RESET ::::\n" && tmuxSession "$@"
                 fi
-                elif (( "$index" < 1 ));then
+            elif (( "$index" < 1 ));then
                 echo -e "\n\t\t ::::$BLUE Tmux session does not exist to switch session ::::\n" $RESET && tmuxSession "$@"
             else
                 echo -e "\n\t\t ::::$BLUE There is only one tmux session exist ::::\n" $RESET && tmuxSession "$@"
             fi
-        ;;
+            ;;
         4)
             if (( "$index" >= 1 ));then
                 if [[ ! "$mode" = "-d" ]];then
@@ -140,7 +185,7 @@ function tmuxSession()
             else
                 echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session $RESET ::::\n" && tmuxSession "$@"
             fi
-        ;;
+            ;;
         5)
             if (( "$index" >= 1 ));then
                 while true
@@ -166,19 +211,17 @@ function tmuxSession()
                 tmuxSession "$@"
             else
                 echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session ::::\n" $RESET && tmuxSession "$@"
-                
-            fi
-        ;;
-        * )
-            tmuxMain "$@"
-        ;;
-        
-    esac
-    
-}
 
+            fi
+            ;;
+        *)
+            tmuxMain "$@"
+            ;;
+
+        esac
+
+    }
 
 ##### call main ####
 tmuxMain "$@"
 ####################
-
