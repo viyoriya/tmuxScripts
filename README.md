@@ -1,10 +1,11 @@
-###  scripts (ssh, session, lazygit and commands)
+###### Simple scripts for ssh and tmux
 
+###### install
     1. copy tmuxFZF and tmuxDmenu to /usr/local/bin/ or run the makeLinks.sh script
     2. install lazygit, xdotool
 
 ###### tmuxFZF
-    1. Add, connect and delete the ssh connections
+    1. Add, connect and delete the ssh connections . SSH connections details added into ~/.config/tmux/tmux-ssh-server.txt file
     2. create ,rename, switch, attach and kill tmux sessions
     3. access lazygit in tmux window, pane and pop-up
 
