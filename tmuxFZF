@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# www.github.com/viyoriya
+
+RED='\033[0;31m'
+PURPLE='\033[0;35m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RESET='\033[0m'
+
+file="$HOME/.config/tmux/tmux-ssh-server.txt"
+TMUX_OPTS="1: SSH\n2: Sessions"
+TMUX_SSH_OPTS="1: Add\n2: Connect\n3: Delete"
+TMUX_SESSION_OPTS="1: Create session\n2: Rename session\n3: Switch session\n4: Attach session\n5: Kill session"
+
+SSH_PARAMS="-Y"
+
+function tmuxMain(){
+    choice=$(echo -e "$TMUX_OPTS" | fzf +m --prompt=":::: Select  > " | awk -F':' '{ print $1 }' )
+    case "$choice" in
+        1)
+            tmuxSsh "$@"
+        ;;
+        2)
+            tmuxSession "$@"
+        ;;
+        *)
+            echo -e "\n\t\t\t ::::$GREEN No option selected $RESET ::::\n "
+        ;;
+    esac
+}
+
+function tmuxSsh(){
+    
+    if [ ! -f "$file" ]; then
+        mkdir -p "$(dirname "$file")" && touch "$file"
+    else
+        touch "$file"
+    fi
+    choice=$(echo -e "$TMUX_SSH_OPTS" | fzf +m --prompt=":::: Select  > " | awk -F':' '{ print $1 }' )
+    case "$choice" in
+        1)
+            addSsh=$(echo -e "Server@ip" | fzf --print-query --prompt=":::: Enter server@ip here  ==> ")
+            if [[ -n "$addSsh" ]] && [[ "$addSsh" != *"Server@"* ]];then
+                echo "ssh $SSH_PARAMS $addSsh" >> "$file"
+            fi
+            tmuxSsh "$@"
+        ;;
+        2)
+            cmd=$(fzf --cycle +m --prompt=":::: SSH connection(s) list >" "$@" < "$file")
+            if [[ -n "$cmd" ]];then
+                echo -e "\n\t\t ::::$PURPLE Connecting =>$GREEN $cmd $RESET ::::\n "
+                $cmd
+            else
+                tmuxSsh "$@"
+            fi
+        ;;
+        3)
+            cmd=$(fzf --cycle +m --prompt=":::: SSH connection list >" "$@" < "$file")
+            if [[ -n "$cmd" ]];then
+                sshDelete=$(echo -e "Yes\nNo" | fzf --header="Do you want to delete ==> $cmd ?")
+                if [[ "$sshDelete" = "Yes" ]];then
+                    grep -v "^$cmd\$" "$file" > "$file.$$"
+                    mv "$file.$$" "$file"
+                fi
+            fi
+            tmuxSsh "$@"
+        ;;
+        *)
+            tmuxMain "$@"
+        ;;
+    esac
+    
+}
+
+function tmuxSession()
+{
+    [[ "$TERM" = *"tmux"* ]] && mode=-d || mode=''
+    choice=$(echo -e "$TMUX_SESSION_OPTS" | fzf +m --prompt=":::: Tmux Sessions  > " | awk -F':' '{ print $1 }' )
+    index=$(tmux list-sessions 2>/dev/null | wc -l )
+    case "$choice" in
+        1)
+            tmux new-session -s$((index+1)) $mode
+            tmux switch-client -t$((index+1))
+        ;;
+        2)
+            if (( "$index" >= 1 ));then
+                switch=$(tmux list-sessions 2>/dev/null | fzf --cycle +m --prompt=":::: Rename tmux session  > ")
+                if [[ -n "$switch" ]];then
+                    sessionName=$(echo -e "$switch" | awk -F':' '{ print $1 }')
+                    while true; do
+                        newName=$(echo -e "Name" | fzf --print-query --prompt=":::: Enter new session name here ==> ")
+                        if [[ -n "$newName" ]] && [[ "$newName" != *"Name"* ]];then
+                            tmux rename-session -t"$sessionName" "$newName"
+                            break
+                        else
+                            echo -e "\n\t\t::::$BLUE Please enter new name for this session $RESET ::::\n"
+                        fi
+                    done
+                    tmuxSession "$@"
+                else
+                    tmuxSession "$@"
+                fi
+                elif (( "$index" < 1 ));then
+                echo -e "\n\t\t ::::$BLUE Tmux session does not exist to rename session ::::\n" $RESET  &&  tmuxSession "$@"
+            fi
+        ;;
+        3)
+            if (( "$index" > 1 ));then
+                if [[ "$mode" = "-d" ]];then
+                    switch=$(tmux list-sessions 2>/dev/null | fzf --cycle +m --prompt=":::: Switch tmux session  > ")
+                    if [[ -n "$switch" ]];then
+                        sessionName=$(echo -e "$switch" | awk -F':' '{ print $1 }')
+                        tmux switch-client -t"$sessionName"
+                    else
+                        tmuxSession "$@"
+                    fi
+                else
+                    echo -e "\n\t\t ::::$BLUE You can not switch session outside tmux. Please do attach session $RESET ::::\n" && tmuxSession "$@"
+                fi
+                elif (( "$index" < 1 ));then
+                echo -e "\n\t\t ::::$BLUE Tmux session does not exist to switch session ::::\n" $RESET && tmuxSession "$@"
+            else
+                echo -e "\n\t\t ::::$BLUE There is only one tmux session exist ::::\n" $RESET && tmuxSession "$@"
+            fi
+        ;;
+        4)
+            if (( "$index" >= 1 ));then
+                if [[ ! "$mode" = "-d" ]];then
+                    sessions=$(tmux list-sessions 2>/dev/null | fzf +m --prompt=":::: Attach tmux session  > ")
+                    if [[ -n "$sessions" ]];then
+                        sessionName=$(echo -e "$sessions" | awk -F':' '{ print $1 }')
+                        tmux attach -t"$sessionName"
+                    else
+                        tmuxSession "$@"
+                    fi
+                else
+                    echo -e "\n\t\t ::::$BLUE You can not attach session inside tmux ::::\n" $RESET && tmuxSession "$@"
+                fi
+            else
+                echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session $RESET ::::\n" && tmuxSession "$@"
+            fi
+        ;;
+        5)
+            if (( "$index" >= 1 ));then
+                while true
+                do
+                    kill=$(tmux list-sessions 2>/dev/null | fzf +m +s --prompt=":::: Kill tmux session  > ")
+                    if [ -n "$kill" ];then
+                        sessionName=$(echo -e "$kill" | awk -F':' '{ print $1 }')
+                        if (( "$index" > 1 ));then
+                            tmux kill-session -t"$sessionName"
+                            index=$(tmux list-sessions 2>/dev/null | wc -l )
+                        else
+                            tmuxExit=$(echo -e "Yes\nNo" | fzf --header="Its a last session do you want to exit tmux ?")
+                            if [[ "$tmuxExit" = "Yes" ]];then
+                                tmux kill-session -t"$sessionName"
+                            else
+                                break;
+                            fi
+                        fi
+                    else
+                        break;
+                    fi
+                done
+                tmuxSession "$@"
+            else
+                echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session ::::\n" $RESET && tmuxSession "$@"
+                
+            fi
+        ;;
+        * )
+            tmuxMain "$@"
+        ;;
+        
+    esac
+    
+}
+
+
+##### call main ####
+tmuxMain "$@"
+####################
+
