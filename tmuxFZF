@@ -39,11 +39,16 @@ function tmuxMain(){
             tmuxSession "$@"
             ;;
         3)
-            #            if [[ "$isLazygitEnabled" = "Y" ]];then
-            tmuxLazygit "$@"
-            #            else
-            #                echo -e "\n\t\t\t ::::$GREEN Setting isLazygitEnabled flag value to Y in line no 21 will enable lazygit  $RESET ::::\n "
-            #            fi
+            if [[ -z "${TMUX}" ]];then
+                echo -e "$SPACE ::::$BLUE Tmux session does not exist ::::\n" $RESET && tmuxMain "$@"
+            else
+                tmuxLazygit "$@"
+            fi
+            #if [[ "$isLazygitEnabled" = "Y" ]];then
+            #   if  [[ ! -z "${TMUX}" ]] && tmuxLazygit "$@"
+            #else
+            #echo -e "\n\t\t\t ::::$GREEN Setting isLazygitEnabled flag value to Y in line no 21 will enable lazygit  $RESET ::::\n "
+            #fi
             ;;
         *)
             echo -e "$SPACE ::::$GREEN No option selected $RESET ::::\n "
