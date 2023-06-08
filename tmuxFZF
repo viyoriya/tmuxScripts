@@ -11,6 +11,7 @@ PURPLE='\033[0;35m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RESET='\033[0m'
+SPACE='\n\t\t\t'
 
 TMUX_OPTS="1: SSH\n2: Sessions\n3: lazygit"
 TMUX_SSH_OPTS="1: Add\n2: Connect\n3: Delete"
@@ -45,7 +46,7 @@ function tmuxMain(){
             #            fi
             ;;
         *)
-            echo -e "\n\t\t\t ::::$GREEN No option selected $RESET ::::\n "
+            echo -e "$SPACE ::::$GREEN No option selected $RESET ::::\n "
             ;;
     esac
 }
@@ -65,11 +66,11 @@ function tmuxLazygit(){
                 tmux popup -h "$LG_HEIGHT" -w "$LG_WIDTH" "$LG_APP"
                 ;;
             *)
-                tmuxLazygit "$@"
+                tmuxMain "$@"
                 ;;
         esac
     else
-        echo -e "\n\t\t\t ::::$BLUE This is not a git project directory $RESET ::::\n " && tmuxMain "$@"
+        echo -e "$SPACE ::::$BLUE This is not a git project directory $RESET ::::\n " && tmuxMain "$@"
     fi
 
 
@@ -94,7 +95,7 @@ function tmuxSsh(){
         2)
             cmd=$(fzf --cycle +m --prompt=":::: SSH connection(s) list >" "$@" < "$file")
             if [[ -n "$cmd" ]];then
-                echo -e "\n\t\t ::::$PURPLE Connecting =>$GREEN $cmd $RESET ::::\n "
+                echo -e "$SPACE ::::$PURPLE Connecting =>$GREEN $cmd $RESET ::::\n "
                 $cmd
             else
                 tmuxSsh "$@"
@@ -139,7 +140,7 @@ function tmuxSession()
                             tmux rename-session -t"$sessionName" "$newName"
                             break
                         else
-                            echo -e "\n\t\t::::$BLUE Please enter new name for this session $RESET ::::\n"
+                            echo -e "$SPACE ::::$BLUE Please enter new name for this session $RESET ::::\n"
                         fi
                     done
                     tmuxSession "$@"
@@ -147,7 +148,7 @@ function tmuxSession()
                     tmuxSession "$@"
                 fi
             elif (( "$index" < 1 ));then
-                echo -e "\n\t\t ::::$BLUE Tmux session does not exist to rename session ::::\n" $RESET  &&  tmuxSession "$@"
+                echo -e "$SPACE ::::$BLUE Tmux session does not exist to rename session ::::\n" $RESET  &&  tmuxSession "$@"
             fi
             ;;
         3)
@@ -161,12 +162,12 @@ function tmuxSession()
                         tmuxSession "$@"
                     fi
                 else
-                    echo -e "\n\t\t ::::$BLUE You can not switch session outside tmux. Please do attach session $RESET ::::\n" && tmuxSession "$@"
+                    echo -e "$SPACE ::::$BLUE You can not switch session outside tmux. Please do attach session $RESET ::::\n" && tmuxSession "$@"
                 fi
             elif (( "$index" < 1 ));then
-                echo -e "\n\t\t ::::$BLUE Tmux session does not exist to switch session ::::\n" $RESET && tmuxSession "$@"
+                echo -e "$SPACE ::::$BLUE Tmux session does not exist to switch session ::::\n" $RESET && tmuxSession "$@"
             else
-                echo -e "\n\t\t ::::$BLUE There is only one tmux session exist ::::\n" $RESET && tmuxSession "$@"
+                echo -e "$SPACE ::::$BLUE There is only one tmux session exist ::::\n" $RESET && tmuxSession "$@"
             fi
             ;;
         4)
@@ -180,10 +181,10 @@ function tmuxSession()
                         tmuxSession "$@"
                     fi
                 else
-                    echo -e "\n\t\t ::::$BLUE You can not attach session inside tmux ::::\n" $RESET && tmuxSession "$@"
+                    echo -e "$SPACE ::::$BLUE You can not attach session inside tmux ::::\n" $RESET && tmuxSession "$@"
                 fi
             else
-                echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session $RESET ::::\n" && tmuxSession "$@"
+                echo -e "$SPACE ::::$BLUE Tmux session does not exist. Please create new session $RESET ::::\n" && tmuxSession "$@"
             fi
             ;;
         5)
@@ -210,7 +211,7 @@ function tmuxSession()
                 done
                 tmuxSession "$@"
             else
-                echo -e "\n\t\t ::::$BLUE Tmux session does not exist. Please create new session ::::\n" $RESET && tmuxSession "$@"
+                echo -e "$SPACE ::::$BLUE Tmux session does not exist. Please create new session ::::\n" $RESET && tmuxSession "$@"
 
             fi
             ;;
