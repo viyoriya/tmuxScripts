@@ -7,11 +7,24 @@ set -e
 
 DMENU="dmenu -l 20 "
 
-tmuxCmdList=$(sed '0,/^__LIST_ALL__$/d' "$0")
-result=$( echo "$tmuxCmdList" | $DMENU -p 'Tmux: ' | awk '{print $1}' )
-if [ -n "$result" ]; then
-    xdotool type "tmux ""$result "
-fi
+case "$1" in
+    "listCmds")
+        tmuxCmdList=$(sed '0,/^__LIST_ALL__$/d' "$0")
+        echo "$tmuxCmdList"
+        ;;
+    "copyCmd")
+        result=$(tee)
+        if [ -n "$result" ]; then
+#            tmuxCmd=$( echo -e "$result" | awk '{print $1}' )
+            tmuxCmd=$( echo -e "$result" | awk '{print $1}' )
+            xdotool type "tmux ""$tmuxCmd "
+            #echo -n "$tmuxCmd" | xclip -selection c
+        fi
+        ;;
+    "")
+        bash "$0" listCmds | $DMENU -p 'Tmux: ' | bash "$0" copyCmd
+        ;;
+esac
 
 exit
 
